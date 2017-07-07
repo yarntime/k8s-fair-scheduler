@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/api/v1"
+	util "k8s-fair-scheduler/pkg/scheduler/util"
 )
 
 var (
@@ -54,6 +55,12 @@ type schedulerCache struct {
 	// a map from pod key to podState.
 	podStates map[string]*podState
 	nodes     map[string]*NodeInfo
+	namespaces namespaceManager
+}
+
+type namespaceManager struct {
+	exist map[string]bool
+	heap util.Heap
 }
 
 type podState struct {
@@ -73,6 +80,10 @@ func newSchedulerCache(ttl, period time.Duration, stop <-chan struct{}) *schedul
 		nodes:       make(map[string]*NodeInfo),
 		assumedPods: make(map[string]bool),
 		podStates:   make(map[string]*podState),
+		namespaces:  namespaceManager {
+			exist: make(map[string]bool),
+			heap: util.NewHeap(),
+		},
 	}
 }
 
@@ -340,6 +351,29 @@ func (cache *schedulerCache) RemoveNode(node *v1.Node) error {
 	if len(n.pods) == 0 && n.node == nil {
 		delete(cache.nodes, node.Name)
 	}
+	return nil
+}
+
+func (cache *schedulerCache) AddNamespace(namespace *v1.Namespace) error {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+
+	n, ok := cache.namespaces.exist[namespace.Name]
+	if !ok {
+		n = NewNamespaceInfo()
+		cache.namespaces.exist[namespace.Name] = true
+		cache.namespaces.heap.Add(n)
+	}
+	return nil
+}
+
+// RemoveNamespace deletes namespace from cache
+func (cache *schedulerCache) RemoveNamespace(namespace *v1.Namespace) error {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+
+	delete(cache.namespaces.exist, namespace.Name)
+
 	return nil
 }
 

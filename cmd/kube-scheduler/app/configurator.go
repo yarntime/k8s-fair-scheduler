@@ -24,7 +24,7 @@ import (
 	appsinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions/apps/v1beta1"
 	coreinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions/core/v1"
 	extensionsinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions/extensions/v1beta1"
-	"k8s.io/kubernetes/plugin/cmd/kube-scheduler/app/options"
+	"k8s-fair-scheduler/cmd/kube-scheduler/app/options"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,11 +38,11 @@ import (
 
 	clientv1 "k8s.io/client-go/pkg/api/v1"
 
-	"k8s.io/kubernetes/plugin/pkg/scheduler"
-	_ "k8s.io/kubernetes/plugin/pkg/scheduler/algorithmprovider"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	latestschedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api/latest"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/factory"
+	"k8s-fair-scheduler/pkg/scheduler"
+	_ "k8s-fair-scheduler/pkg/scheduler/algorithmprovider"
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	latestschedulerapi "k8s-fair-scheduler/pkg/scheduler/api/latest"
+	"k8s-fair-scheduler/pkg/scheduler/factory"
 
 	"github.com/golang/glog"
 )
@@ -83,6 +83,7 @@ func CreateScheduler(
 	replicaSetInformer extensionsinformers.ReplicaSetInformer,
 	statefulSetInformer appsinformers.StatefulSetInformer,
 	serviceInformer coreinformers.ServiceInformer,
+        namespaceInformer coreinformers.NamespaceInformer,
 	recorder record.EventRecorder,
 ) (*scheduler.Scheduler, error) {
 	configurator := factory.NewConfigFactory(
@@ -95,6 +96,7 @@ func CreateScheduler(
 		replicaSetInformer,
 		statefulSetInformer,
 		serviceInformer,
+		namespaceInformer,
 		s.HardPodAffinitySymmetricWeight,
 	)
 

@@ -93,4 +93,10 @@ type Cache interface {
 
 	// List lists all cached pods (including assumed ones).
 	List(labels.Selector) ([]*v1.Pod, error)
+
+	// AddNamespace adds namespace to cache
+	AddNamespace(namespace *v1.Namespace) error
+
+	// RemoveNamespace deletes namespace from cache
+	RemoveNamespace(namespace *v1.Namespace) error
 }

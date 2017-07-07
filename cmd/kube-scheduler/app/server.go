@@ -32,8 +32,8 @@ import (
 	"k8s.io/kubernetes/pkg/client/leaderelection"
 	"k8s.io/kubernetes/pkg/client/leaderelection/resourcelock"
 	"k8s.io/kubernetes/pkg/util/configz"
-	"k8s.io/kubernetes/plugin/cmd/kube-scheduler/app/options"
-	_ "k8s.io/kubernetes/plugin/pkg/scheduler/algorithmprovider"
+	"k8s-fair-scheduler/cmd/kube-scheduler/app/options"
+	_ "k8s-fair-scheduler/pkg/scheduler/algorithmprovider"
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
@@ -82,6 +82,7 @@ func Run(s *options.SchedulerServer) error {
 		informerFactory.Extensions().V1beta1().ReplicaSets(),
 		informerFactory.Apps().V1beta1().StatefulSets(),
 		informerFactory.Core().V1().Services(),
+		informerFactory.Core().V1().Namespaces(),
 		recorder,
 	)
 	if err != nil {

@@ -10,7 +10,7 @@ type Heap struct {
 }
 
 // new Heap with default size: 50
-func New() *Heap {
+func NewHeap() *Heap {
 	return &Heap{0, make([]HeapElement, 50)}
 }
 

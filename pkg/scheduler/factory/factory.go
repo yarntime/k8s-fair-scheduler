@@ -39,14 +39,14 @@ import (
 	appslisters "k8s.io/kubernetes/pkg/client/listers/apps/v1beta1"
 	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
 	extensionslisters "k8s.io/kubernetes/pkg/client/listers/extensions/v1beta1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/api/validation"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/core"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/util"
+	"k8s-fair-scheduler/pkg/scheduler"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm/predicates"
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/api/validation"
+	"k8s-fair-scheduler/pkg/scheduler/core"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
+	"k8s-fair-scheduler/pkg/scheduler/util"
 )
 
 const (
@@ -78,7 +78,8 @@ type ConfigFactory struct {
 	replicaSetLister extensionslisters.ReplicaSetLister
 	// a means to list all statefulsets
 	statefulSetLister appslisters.StatefulSetLister
-
+	// a means to list all namespaces
+	namespaceLister  corelisters.NamespaceLister
 	// Close this to stop all reflectors
 	StopEverything chan struct{}
 
@@ -111,6 +112,7 @@ func NewConfigFactory(
 	replicaSetInformer extensionsinformers.ReplicaSetInformer,
 	statefulSetInformer appsinformers.StatefulSetInformer,
 	serviceInformer coreinformers.ServiceInformer,
+        namespaceInformer coreinformers.NamespaceInformer,
 	hardPodAffinitySymmetricWeight int,
 ) scheduler.Configurator {
 	stopEverything := make(chan struct{})
@@ -126,6 +128,7 @@ func NewConfigFactory(
 		controllerLister:               replicationControllerInformer.Lister(),
 		replicaSetLister:               replicaSetInformer.Lister(),
 		statefulSetLister:              statefulSetInformer.Lister(),
+		namespaceInformer:               namespaceInformer.Lister(),
 		schedulerCache:                 schedulerCache,
 		StopEverything:                 stopEverything,
 		schedulerName:                  schedulerName,
@@ -160,6 +163,15 @@ func NewConfigFactory(
 		0,
 	)
 	c.nodeLister = nodeInformer.Lister()
+
+	namespaceInformer.Informer().AddEventHandlerWithResyncPeriod(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    nil,
+			DeleteFunc: nil,
+		},
+		0,
+	)
+	c.namespaceLister = namespaceInformer.Lister()
 
 	// TODO(harryz) need to fill all the handlers here and below for equivalence cache
 
@@ -287,6 +299,39 @@ func (c *ConfigFactory) deleteNodeFromCache(obj interface{}) {
 	}
 	if err := c.schedulerCache.RemoveNode(node); err != nil {
 		glog.Errorf("scheduler cache RemoveNode failed: %v", err)
+	}
+}
+
+func (c *ConfigFactory) addNamespaceToCache(obj interface{}) {
+	namespace, ok := obj.(*v1.Namespace)
+	if !ok {
+		glog.Errorf("cannot convert to *v1.Namespace: %v", obj)
+		return
+	}
+
+	if err := c.schedulerCache.AddNamespace(namespace); err != nil {
+		glog.Errorf("scheduler cache AddNamespace failed: %v", err)
+	}
+}
+
+func (c *ConfigFactory) deleteNamespaceFromCache(obj interface{}) {
+	var namespace *v1.Namespace
+	switch t := obj.(type) {
+	case *v1.Namespace:
+		namespace = t
+	case cache.DeletedFinalStateUnknown:
+		var ok bool
+		namespace, ok = t.Obj.(*v1.Namespace)
+		if !ok {
+			glog.Errorf("cannot convert to *v1.Namespace: %v", t.Obj)
+			return
+		}
+	default:
+		glog.Errorf("cannot convert to *v1.Namespace: %v", t)
+		return
+	}
+	if err := c.schedulerCache.RemoveNamespace(namespace); err != nil {
+		glog.Errorf("scheduler cache RemoveNamespace failed: %v", err)
 	}
 }
 
@@ -460,6 +505,7 @@ func (f *ConfigFactory) Run() {
 
 func (f *ConfigFactory) getNextPod() *v1.Pod {
 	for {
+		// get a namespace first, and then get a pod from the namespace
 		pod := cache.Pop(f.podQueue).(*v1.Pod)
 		if f.ResponsibleForPod(pod) {
 			glog.V(4).Infof("About to try and schedule pod %v", pod.Name)

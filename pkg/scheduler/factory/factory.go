@@ -23,6 +23,14 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s-fair-scheduler/pkg/scheduler"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm/predicates"
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/api/validation"
+	"k8s-fair-scheduler/pkg/scheduler/core"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
+	"k8s-fair-scheduler/pkg/scheduler/util"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -39,14 +47,6 @@ import (
 	appslisters "k8s.io/kubernetes/pkg/client/listers/apps/v1beta1"
 	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
 	extensionslisters "k8s.io/kubernetes/pkg/client/listers/extensions/v1beta1"
-	"k8s-fair-scheduler/pkg/scheduler"
-	"k8s-fair-scheduler/pkg/scheduler/algorithm"
-	"k8s-fair-scheduler/pkg/scheduler/algorithm/predicates"
-	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
-	"k8s-fair-scheduler/pkg/scheduler/api/validation"
-	"k8s-fair-scheduler/pkg/scheduler/core"
-	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
-	"k8s-fair-scheduler/pkg/scheduler/util"
 )
 
 const (
@@ -79,7 +79,7 @@ type ConfigFactory struct {
 	// a means to list all statefulsets
 	statefulSetLister appslisters.StatefulSetLister
 	// a means to list all namespaces
-	namespaceLister  corelisters.NamespaceLister
+	namespaceLister corelisters.NamespaceLister
 	// Close this to stop all reflectors
 	StopEverything chan struct{}
 
@@ -112,7 +112,7 @@ func NewConfigFactory(
 	replicaSetInformer extensionsinformers.ReplicaSetInformer,
 	statefulSetInformer appsinformers.StatefulSetInformer,
 	serviceInformer coreinformers.ServiceInformer,
-        namespaceInformer coreinformers.NamespaceInformer,
+	namespaceInformer coreinformers.NamespaceInformer,
 	hardPodAffinitySymmetricWeight int,
 ) scheduler.Configurator {
 	stopEverything := make(chan struct{})
@@ -128,7 +128,7 @@ func NewConfigFactory(
 		controllerLister:               replicationControllerInformer.Lister(),
 		replicaSetLister:               replicaSetInformer.Lister(),
 		statefulSetLister:              statefulSetInformer.Lister(),
-		namespaceInformer:               namespaceInformer.Lister(),
+		namespaceInformer:              namespaceInformer.Lister(),
 		schedulerCache:                 schedulerCache,
 		StopEverything:                 stopEverything,
 		schedulerName:                  schedulerName,

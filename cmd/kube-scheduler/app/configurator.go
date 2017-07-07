@@ -21,10 +21,10 @@ import (
 	"io/ioutil"
 	"os"
 
+	"k8s-fair-scheduler/cmd/kube-scheduler/app/options"
 	appsinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions/apps/v1beta1"
 	coreinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions/core/v1"
 	extensionsinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions/extensions/v1beta1"
-	"k8s-fair-scheduler/cmd/kube-scheduler/app/options"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -83,7 +83,7 @@ func CreateScheduler(
 	replicaSetInformer extensionsinformers.ReplicaSetInformer,
 	statefulSetInformer appsinformers.StatefulSetInformer,
 	serviceInformer coreinformers.ServiceInformer,
-        namespaceInformer coreinformers.NamespaceInformer,
+	namespaceInformer coreinformers.NamespaceInformer,
 	recorder record.EventRecorder,
 ) (*scheduler.Scheduler, error) {
 	configurator := factory.NewConfigFactory(

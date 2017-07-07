@@ -21,11 +21,10 @@ import (
 
 	"github.com/golang/glog"
 
-	"k8s.io/apimachinery/pkg/api/resource"
+	priorityutil "k8s-fair-scheduler/pkg/scheduler/algorithm/priorities/util"
 	clientcache "k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/api/v1"
 	v1helper "k8s.io/kubernetes/pkg/api/v1/helper"
-	priorityutil "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/priorities/util"
 )
 
 var emptyResource = Resource{}
@@ -62,51 +61,6 @@ type NodeInfo struct {
 	// Whenever NodeInfo changes, generation is bumped.
 	// This is used to avoid cloning it if the object didn't change.
 	generation int64
-}
-
-// Resource is a collection of compute resource.
-type Resource struct {
-	MilliCPU           int64
-	Memory             int64
-	NvidiaGPU          int64
-	OpaqueIntResources map[v1.ResourceName]int64
-}
-
-func (r *Resource) ResourceList() v1.ResourceList {
-	result := v1.ResourceList{
-		v1.ResourceCPU:       *resource.NewMilliQuantity(r.MilliCPU, resource.DecimalSI),
-		v1.ResourceMemory:    *resource.NewQuantity(r.Memory, resource.BinarySI),
-		v1.ResourceNvidiaGPU: *resource.NewQuantity(r.NvidiaGPU, resource.DecimalSI),
-	}
-	for rName, rQuant := range r.OpaqueIntResources {
-		result[rName] = *resource.NewQuantity(rQuant, resource.DecimalSI)
-	}
-	return result
-}
-
-func (r *Resource) Clone() *Resource {
-	res := &Resource{
-		MilliCPU:  r.MilliCPU,
-		Memory:    r.Memory,
-		NvidiaGPU: r.NvidiaGPU,
-	}
-	res.OpaqueIntResources = make(map[v1.ResourceName]int64)
-	for k, v := range r.OpaqueIntResources {
-		res.OpaqueIntResources[k] = v
-	}
-	return res
-}
-
-func (r *Resource) AddOpaque(name v1.ResourceName, quantity int64) {
-	r.SetOpaque(name, r.OpaqueIntResources[name]+quantity)
-}
-
-func (r *Resource) SetOpaque(name v1.ResourceName, quantity int64) {
-	// Lazily allocate opaque integer resource map.
-	if r.OpaqueIntResources == nil {
-		r.OpaqueIntResources = map[v1.ResourceName]int64{}
-	}
-	r.OpaqueIntResources[name] = quantity
 }
 
 // NewNodeInfo returns a ready to use empty NodeInfo object.

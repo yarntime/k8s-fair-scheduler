@@ -17,11 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"k8s-fair-scheduler/cmd/kube-scheduler/app"
+	"k8s-fair-scheduler/cmd/kube-scheduler/app/options"
 	"k8s.io/apiserver/pkg/util/flag"
 	"k8s.io/apiserver/pkg/util/logs"
 	"k8s.io/kubernetes/pkg/version/verflag"
-	"k8s-fair-scheduler/cmd/kube-scheduler/app"
-	"k8s-fair-scheduler/cmd/kube-scheduler/app/options"
 
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"

@@ -22,10 +22,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	util "k8s-fair-scheduler/pkg/scheduler/util"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/api/v1"
-	util "k8s-fair-scheduler/pkg/scheduler/util"
 )
 
 var (
@@ -53,14 +53,14 @@ type schedulerCache struct {
 	// The key could further be used to get an entry in podStates.
 	assumedPods map[string]bool
 	// a map from pod key to podState.
-	podStates map[string]*podState
-	nodes     map[string]*NodeInfo
+	podStates  map[string]*podState
+	nodes      map[string]*NodeInfo
 	namespaces namespaceManager
 }
 
 type namespaceManager struct {
 	exist map[string]bool
-	heap util.Heap
+	heap  util.Heap
 }
 
 type podState struct {
@@ -80,9 +80,9 @@ func newSchedulerCache(ttl, period time.Duration, stop <-chan struct{}) *schedul
 		nodes:       make(map[string]*NodeInfo),
 		assumedPods: make(map[string]bool),
 		podStates:   make(map[string]*podState),
-		namespaces:  namespaceManager {
+		namespaces: namespaceManager{
 			exist: make(map[string]bool),
-			heap: util.NewHeap(),
+			heap:  util.NewHeap(),
 		},
 	}
 }

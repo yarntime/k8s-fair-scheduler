@@ -166,8 +166,8 @@ func NewConfigFactory(
 
 	namespaceInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc:    nil,
-			DeleteFunc: nil,
+			AddFunc:    c.addNamespaceToCache,
+			DeleteFunc: c.deleteNamespaceFromCache,
 		},
 		0,
 	)

@@ -58,5 +58,9 @@ func (n *NamespaceInfo) AddPod(pod *v1.Pod) {
 }
 
 func (n *NamespaceInfo) RemovePod(pod *v1.Pod) error {
+	res, _, _ := calculateResource(pod)
+	n.requestedResource.MilliCPU -= res.MilliCPU
+	n.requestedResource.Memory -= res.Memory
+	n.requestedResource.NvidiaGPU -= res.NvidiaGPU
 	return nil
 }

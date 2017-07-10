@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	util "k8s-fair-scheduler/pkg/scheduler/util"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/api/v1"
@@ -55,12 +54,7 @@ type schedulerCache struct {
 	// a map from pod key to podState.
 	podStates  map[string]*podState
 	nodes      map[string]*NodeInfo
-	namespaces namespaceManager
-}
-
-type namespaceManager struct {
-	exist map[string]bool
-	heap  util.Heap
+	namespaces map[string]*NamespaceInfo
 }
 
 type podState struct {
@@ -80,10 +74,7 @@ func newSchedulerCache(ttl, period time.Duration, stop <-chan struct{}) *schedul
 		nodes:       make(map[string]*NodeInfo),
 		assumedPods: make(map[string]bool),
 		podStates:   make(map[string]*podState),
-		namespaces: namespaceManager{
-			exist: make(map[string]bool),
-			heap:  util.NewHeap(),
-		},
+		namespaces:  make(map[string]*NamespaceInfo),
 	}
 }
 
@@ -193,12 +184,19 @@ func (cache *schedulerCache) ForgetPod(pod *v1.Pod) error {
 
 // Assumes that lock is already acquired.
 func (cache *schedulerCache) addPod(pod *v1.Pod) {
-	n, ok := cache.nodes[pod.Spec.NodeName]
+	node, ok := cache.nodes[pod.Spec.NodeName]
 	if !ok {
-		n = NewNodeInfo()
-		cache.nodes[pod.Spec.NodeName] = n
+		node = NewNodeInfo()
+		cache.nodes[pod.Spec.NodeName] = node
 	}
-	n.addPod(pod)
+	node.addPod(pod)
+
+	namespace, ok := cache.namespaces[pod.Name]
+	if !ok {
+		namespace = NewNamespaceInfo()
+		cache.namespaces[pod.Name] = namespace
+	}
+	namespace.AddPod(pod)
 }
 
 // Assumes that lock is already acquired.
@@ -212,13 +210,22 @@ func (cache *schedulerCache) updatePod(oldPod, newPod *v1.Pod) error {
 
 // Assumes that lock is already acquired.
 func (cache *schedulerCache) removePod(pod *v1.Pod) error {
-	n := cache.nodes[pod.Spec.NodeName]
-	if err := n.removePod(pod); err != nil {
+	node := cache.nodes[pod.Spec.NodeName]
+	if err := node.removePod(pod); err != nil {
 		return err
 	}
-	if len(n.pods) == 0 && n.node == nil {
+	if len(node.pods) == 0 && node.node == nil {
 		delete(cache.nodes, pod.Spec.NodeName)
 	}
+
+	namespace := cache.namespaces[pod.Name]
+	if err := namespace.RemovePod(pod); err != nil {
+		return err
+	}
+	if len(namespace.allocatedPods) == 0 && len(namespace.pendingPods) == 0 && namespace.namespace == nil {
+		delete(cache.namespaces, pod.Name)
+	}
+	
 	return nil
 }
 
@@ -358,11 +365,10 @@ func (cache *schedulerCache) AddNamespace(namespace *v1.Namespace) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	n, ok := cache.namespaces.exist[namespace.Name]
+	n, ok := cache.namespaces[namespace.Name]
 	if !ok {
 		n = NewNamespaceInfo()
-		cache.namespaces.exist[namespace.Name] = true
-		cache.namespaces.heap.Add(n)
+		cache.namespaces[namespace.Name] = n
 	}
 	return nil
 }
@@ -372,7 +378,7 @@ func (cache *schedulerCache) RemoveNamespace(namespace *v1.Namespace) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	delete(cache.namespaces.exist, namespace.Name)
+	delete(cache.namespaces, namespace.Name)
 
 	return nil
 }

@@ -20,8 +20,8 @@ type NamespaceInfo struct {
 	generation int64
 }
 
-func (n *NamespaceInfo) score() {
-
+func (n *NamespaceInfo) score() int {
+	return 0
 }
 
 // NewNamespaceInfo returns a ready to use empty NamespaceInfo object.

@@ -225,7 +225,7 @@ func (cache *schedulerCache) removePod(pod *v1.Pod) error {
 	if len(namespace.allocatedPods) == 0 && len(namespace.pendingPods) == 0 && namespace.namespace == nil {
 		delete(cache.namespaces, pod.Name)
 	}
-	
+
 	return nil
 }
 

@@ -18,5 +18,5 @@ package algorithmprovider
 
 import (
 	// Import defaults of algorithmprovider for initialization.
-	_ "k8s.io/kubernetes/plugin/pkg/scheduler/algorithmprovider/defaults"
+	_ "k8s-fair-scheduler/pkg/scheduler/algorithmprovider/defaults"
 )

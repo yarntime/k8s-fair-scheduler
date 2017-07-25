@@ -19,9 +19,9 @@ package priorities
 import (
 	"fmt"
 
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/kubernetes/pkg/api/v1"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 
 	"github.com/golang/glog"
 )

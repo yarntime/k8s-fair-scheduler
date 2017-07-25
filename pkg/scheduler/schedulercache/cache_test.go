@@ -22,11 +22,11 @@ import (
 	"testing"
 	"time"
 
+	priorityutil "k8s-fair-scheduler/pkg/scheduler/algorithm/priorities/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/kubernetes/pkg/api/v1"
-	priorityutil "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/priorities/util"
 )
 
 func deepEqualWithoutGeneration(t *testing.T, testcase int, actual, expected *NodeInfo) {

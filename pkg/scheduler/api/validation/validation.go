@@ -19,8 +19,8 @@ package validation
 import (
 	"fmt"
 
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
 )
 
 // ValidatePolicy checks for errors in the Config

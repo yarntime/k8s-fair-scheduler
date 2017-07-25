@@ -17,8 +17,8 @@ limitations under the License.
 package factory
 
 import (
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	"k8s-fair-scheduler/pkg/scheduler/api"
 	"testing"
 )
 

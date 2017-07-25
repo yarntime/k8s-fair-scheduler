@@ -25,14 +25,14 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm/predicates"
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/apimachinery/pkg/util/errors"
 	utiltrace "k8s.io/apiserver/pkg/util/trace"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 type FailedPredicateMap map[string][]algorithm.PredicateFailureReason

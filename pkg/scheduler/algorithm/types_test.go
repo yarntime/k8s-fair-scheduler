@@ -19,9 +19,9 @@ package algorithm
 import (
 	"testing"
 
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 // EmptyMetadataProducer should returns a no-op MetadataProducer type.

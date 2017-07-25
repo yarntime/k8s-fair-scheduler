@@ -77,6 +77,12 @@ type Cache interface {
 	// RemovePod removes a pod. The pod's information would be subtracted from assigned node.
 	RemovePod(pod *v1.Pod) error
 
+	// GetNextPod returns the pod should be scheduled this time.
+	GetNextPod() (*v1.Pod, error)
+
+	// PushBackPod put the failed pod back to the FIFO queue
+	PushBackPod(*v1.Pod) error
+
 	// AddNode adds overall information about node.
 	AddNode(node *v1.Node) error
 

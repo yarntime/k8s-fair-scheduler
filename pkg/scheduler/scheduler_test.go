@@ -23,6 +23,11 @@ import (
 	"testing"
 	"time"
 
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm/predicates"
+	"k8s-fair-scheduler/pkg/scheduler/core"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
+	schedulertesting "k8s-fair-scheduler/pkg/scheduler/testing"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -34,11 +39,6 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/testapi"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/core"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
-	schedulertesting "k8s.io/kubernetes/plugin/pkg/scheduler/testing"
 )
 
 type fakeBinder struct {

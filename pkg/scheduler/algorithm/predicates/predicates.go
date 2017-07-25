@@ -25,6 +25,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	priorityutil "k8s-fair-scheduler/pkg/scheduler/algorithm/priorities/util"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -34,9 +37,6 @@ import (
 	v1helper "k8s.io/kubernetes/pkg/api/v1/helper"
 	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	priorityutil "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/priorities/util"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 // predicatePrecomputations: Helper types/variables...

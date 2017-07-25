@@ -19,9 +19,9 @@ package priorities
 import (
 	"fmt"
 
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/kubernetes/pkg/api/v1"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 // ImageLocalityPriority is a priority function that favors nodes that already have requested pod container's images.

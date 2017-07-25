@@ -17,12 +17,12 @@ limitations under the License.
 package priorities
 
 import (
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 func makeNode(node string, milliCPU, memory int64) *v1.Node {

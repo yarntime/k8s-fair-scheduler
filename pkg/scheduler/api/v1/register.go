@@ -17,9 +17,9 @@ limitations under the License.
 package v1
 
 import (
+	"k8s-fair-scheduler/pkg/scheduler/api"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/api"
 )
 
 // SchemeGroupVersion is group version used to register these objects

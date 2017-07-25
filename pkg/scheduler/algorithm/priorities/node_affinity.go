@@ -20,11 +20,11 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/kubernetes/pkg/api/v1"
 	v1helper "k8s.io/kubernetes/pkg/api/v1/helper"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 // CalculateNodeAffinityPriority prioritizes nodes according to node affinity scheduling preferences

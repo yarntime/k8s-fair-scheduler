@@ -19,11 +19,11 @@ package priorities
 import (
 	"fmt"
 
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 type NodeLabelPrioritizer struct {

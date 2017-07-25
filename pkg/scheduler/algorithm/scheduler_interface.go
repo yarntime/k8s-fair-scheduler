@@ -17,9 +17,9 @@ limitations under the License.
 package algorithm
 
 import (
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/kubernetes/pkg/api/v1"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 // SchedulerExtender is an interface for external processes to influence scheduling

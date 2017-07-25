@@ -23,6 +23,11 @@ import (
 	"testing"
 	"time"
 
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	latestschedulerapi "k8s-fair-scheduler/pkg/scheduler/api/latest"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
+	"k8s-fair-scheduler/pkg/scheduler/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	restclient "k8s.io/client-go/rest"
@@ -34,11 +39,6 @@ import (
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	informers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	latestschedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api/latest"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/util"
 )
 
 func TestCreate(t *testing.T) {

@@ -128,7 +128,7 @@ func NewConfigFactory(
 		controllerLister:               replicationControllerInformer.Lister(),
 		replicaSetLister:               replicaSetInformer.Lister(),
 		statefulSetLister:              statefulSetInformer.Lister(),
-		namespaceInformer:              namespaceInformer.Lister(),
+		namespaceLister:                namespaceInformer.Lister(),
 		schedulerCache:                 schedulerCache,
 		StopEverything:                 stopEverything,
 		schedulerName:                  schedulerName,
@@ -506,7 +506,21 @@ func (f *ConfigFactory) Run() {
 func (f *ConfigFactory) getNextPod() *v1.Pod {
 	for {
 		// get a namespace first, and then get a pod from the namespace
-		pod := cache.Pop(f.podQueue).(*v1.Pod)
+		pod, err := f.schedulerCache.GetNextPod()
+
+		if err != nil {
+			glog.V(4).Infof("Failed to get a pod to schedule. %v", err)
+			continue
+		}
+
+		if pod == nil {
+			fmt.Println("no pod is selected, wait another turn.")
+			time.Sleep(time.Second * 2)
+			continue
+		}
+
+		glog.V(1).Infof("selected pod is %s/%s", pod.Namespace, pod.Name)
+
 		if f.ResponsibleForPod(pod) {
 			glog.V(4).Infof("About to try and schedule pod %v", pod.Name)
 			return pod
@@ -589,7 +603,7 @@ func (factory *ConfigFactory) MakeDefaultErrorFunc(backoff *util.PodBackoff, pod
 				pod, err := factory.client.Core().Pods(podID.Namespace).Get(podID.Name, metav1.GetOptions{})
 				if err == nil {
 					if len(pod.Spec.NodeName) == 0 {
-						podQueue.AddIfNotPresent(pod)
+						factory.schedulerCache.PushBackPod(pod)
 					}
 					break
 				}

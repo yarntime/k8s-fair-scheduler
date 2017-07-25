@@ -20,11 +20,11 @@ import (
 	"reflect"
 	"testing"
 
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm/predicates"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates"
 )
 
 func TestUpdateCachedPredicateItem(t *testing.T) {

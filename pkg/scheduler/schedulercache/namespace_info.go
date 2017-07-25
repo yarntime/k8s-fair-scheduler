@@ -1,15 +1,21 @@
 package schedulercache
 
 import (
+	"github.com/foize/go.fifo"
+	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api/v1"
+	"math"
+)
+
+var (
+	SYSTEM_NAMESPACE       = "kube-system"
+	MAX_SCORE        int32 = 100
 )
 
 type NamespaceInfo struct {
 	namespace *v1.Namespace
 
-	allocatedPods []*v1.Pod
-
-	pendingPods []*v1.Pod
+	pendingPods *fifo.Queue
 
 	requestedResource *Resource
 
@@ -20,8 +26,25 @@ type NamespaceInfo struct {
 	generation int64
 }
 
-func (n *NamespaceInfo) score() int {
-	return 0
+func (n *NamespaceInfo) score(totalResource *Resource) int32 {
+
+	if n.namespace != nil {
+		glog.V(5).Infof("current namespace is %s\n", n.namespace.Name)
+		if n.namespace.Name == SYSTEM_NAMESPACE {
+			return MAX_SCORE * 2
+		}
+
+		if n.namespace.ObjectMeta.Annotations != nil {
+			if _, ok := n.namespace.ObjectMeta.Annotations[SYSTEM_NAMESPACE]; ok {
+				return MAX_SCORE + MAX_SCORE/2
+			}
+		}
+	}
+
+	glog.V(5).Infof("%f, %f, %f, %f\n", float64(n.requestedResource.Memory), float64(totalResource.Memory), float64(n.requestedResource.MilliCPU), float64(totalResource.MilliCPU))
+	memRatio, cpuRatio := float64(n.requestedResource.Memory)/float64(totalResource.Memory), float64(n.requestedResource.MilliCPU)/float64(totalResource.MilliCPU)
+
+	return int32(100) - int32(math.Max(memRatio, cpuRatio)*100)
 }
 
 // NewNamespaceInfo returns a ready to use empty NamespaceInfo object.
@@ -29,7 +52,9 @@ func (n *NamespaceInfo) score() int {
 // the returned object.
 func NewNamespaceInfo(pods ...*v1.Pod) *NamespaceInfo {
 	ni := &NamespaceInfo{
+		requestedResource: &Resource{},
 		allocatedResource: &Resource{},
+		pendingPods:       fifo.NewQueue(),
 	}
 
 	return ni
@@ -49,9 +74,11 @@ func (n *NamespaceInfo) AddPod(pod *v1.Pod) {
 	}
 
 	if pod.Spec.NodeName == "" {
-		n.pendingPods = append(n.pendingPods, pod)
+		n.pendingPods.Add(pod)
 	} else {
-		n.allocatedPods = append(n.allocatedPods, pod)
+		n.allocatedResource.MilliCPU += res.MilliCPU
+		n.allocatedResource.Memory += res.Memory
+		n.allocatedResource.NvidiaGPU += res.NvidiaGPU
 	}
 
 	n.generation++
@@ -63,4 +90,12 @@ func (n *NamespaceInfo) RemovePod(pod *v1.Pod) error {
 	n.requestedResource.Memory -= res.Memory
 	n.requestedResource.NvidiaGPU -= res.NvidiaGPU
 	return nil
+}
+
+// use FIFO queue now, we may change this later.
+func (n *NamespaceInfo) GetNextPod() (*v1.Pod, error) {
+
+	p := n.pendingPods.Next().(*v1.Pod)
+
+	return p, nil
 }

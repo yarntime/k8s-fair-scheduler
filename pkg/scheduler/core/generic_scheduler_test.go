@@ -25,6 +25,13 @@ import (
 	"testing"
 	"time"
 
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	algorithmpredicates "k8s-fair-scheduler/pkg/scheduler/algorithm/predicates"
+	algorithmpriorities "k8s-fair-scheduler/pkg/scheduler/algorithm/priorities"
+	priorityutil "k8s-fair-scheduler/pkg/scheduler/algorithm/priorities/util"
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
+	schedulertesting "k8s-fair-scheduler/pkg/scheduler/testing"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -32,13 +39,6 @@ import (
 	"k8s.io/kubernetes/pkg/api/v1"
 	apps "k8s.io/kubernetes/pkg/apis/apps/v1beta1"
 	extensions "k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	algorithmpredicates "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates"
-	algorithmpriorities "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/priorities"
-	priorityutil "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/priorities/util"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
-	schedulertesting "k8s.io/kubernetes/plugin/pkg/scheduler/testing"
 )
 
 func falsePredicate(pod *v1.Pod, meta interface{}, nodeInfo *schedulercache.NodeInfo) (bool, []algorithm.PredicateFailureReason, error) {

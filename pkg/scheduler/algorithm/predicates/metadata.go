@@ -18,9 +18,9 @@ package predicates
 
 import (
 	"github.com/golang/glog"
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 type PredicateMetadataFactory struct {

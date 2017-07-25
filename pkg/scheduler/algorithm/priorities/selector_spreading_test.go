@@ -21,13 +21,13 @@ import (
 	"sort"
 	"testing"
 
+	schedulerapi "k8s-fair-scheduler/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
+	schedulertesting "k8s-fair-scheduler/pkg/scheduler/testing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/api/v1"
 	apps "k8s.io/kubernetes/pkg/apis/apps/v1beta1"
 	extensions "k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
-	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
-	schedulertesting "k8s.io/kubernetes/plugin/pkg/scheduler/testing"
 )
 
 func controllerRef(kind, name, uid string) []metav1.OwnerReference {

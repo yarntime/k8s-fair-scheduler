@@ -21,14 +21,14 @@ import (
 	"reflect"
 	"testing"
 
+	"k8s-fair-scheduler/pkg/scheduler/algorithm"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
+	schedulertesting "k8s-fair-scheduler/pkg/scheduler/testing"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/api/v1"
 	v1helper "k8s.io/kubernetes/pkg/api/v1/helper"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
-	schedulertesting "k8s.io/kubernetes/plugin/pkg/scheduler/testing"
 )
 
 type FakeNodeInfo v1.Node

@@ -19,7 +19,7 @@ package validation
 import (
 	"testing"
 
-	"k8s.io/kubernetes/plugin/pkg/scheduler/api"
+	"k8s-fair-scheduler/pkg/scheduler/api"
 )
 
 func TestValidatePriorityWithNoWeight(t *testing.T) {

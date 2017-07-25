@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/api/v1"
+	"math"
 )
 
 var (
@@ -48,6 +49,8 @@ type schedulerCache struct {
 
 	// This mutex guards all fields within this cache struct.
 	mu sync.Mutex
+
+	totalResource *Resource
 	// a set of assumed pod keys.
 	// The key could further be used to get an entry in podStates.
 	assumedPods map[string]bool
@@ -71,10 +74,11 @@ func newSchedulerCache(ttl, period time.Duration, stop <-chan struct{}) *schedul
 		period: period,
 		stop:   stop,
 
-		nodes:       make(map[string]*NodeInfo),
-		assumedPods: make(map[string]bool),
-		podStates:   make(map[string]*podState),
-		namespaces:  make(map[string]*NamespaceInfo),
+		totalResource: &Resource{},
+		nodes:         make(map[string]*NodeInfo),
+		assumedPods:   make(map[string]bool),
+		podStates:     make(map[string]*podState),
+		namespaces:    make(map[string]*NamespaceInfo),
 	}
 }
 
@@ -194,7 +198,7 @@ func (cache *schedulerCache) addPod(pod *v1.Pod) {
 	namespace, ok := cache.namespaces[pod.Name]
 	if !ok {
 		namespace = NewNamespaceInfo()
-		cache.namespaces[pod.Name] = namespace
+		cache.namespaces[pod.Namespace] = namespace
 	}
 	namespace.AddPod(pod)
 }
@@ -221,9 +225,6 @@ func (cache *schedulerCache) removePod(pod *v1.Pod) error {
 	namespace := cache.namespaces[pod.Name]
 	if err := namespace.RemovePod(pod); err != nil {
 		return err
-	}
-	if len(namespace.allocatedPods) == 0 && len(namespace.pendingPods) == 0 && namespace.namespace == nil {
-		delete(cache.namespaces, pod.Name)
 	}
 
 	return nil
@@ -319,6 +320,43 @@ func (cache *schedulerCache) RemovePod(pod *v1.Pod) error {
 	return nil
 }
 
+func (cache *schedulerCache) GetNextPod() (*v1.Pod, error) {
+	var maxScore int32 = math.MinInt32
+	var selectedNamespaceInfo *NamespaceInfo
+	for _, v := range cache.namespaces {
+		if v.namespace == nil {
+			glog.V(5).Infof("namespace is not added...\n")
+			continue
+		}
+		curScore := v.score(cache.totalResource)
+
+		glog.V(5).Infof("namespace %v's score: %d\n", v.namespace.Name, curScore)
+		glog.V(5).Infof("namespace pending job number: %d\n", v.pendingPods.Len())
+
+		if curScore > maxScore && v.pendingPods.Len() != 0 {
+			maxScore = curScore
+			selectedNamespaceInfo = v
+		}
+	}
+
+	if selectedNamespaceInfo == nil {
+		return nil, nil
+	}
+
+	return selectedNamespaceInfo.GetNextPod()
+}
+
+func (cache *schedulerCache) PushBackPod(pod *v1.Pod) error {
+	namespace := pod.Namespace
+	for k, v := range cache.namespaces {
+		if k == namespace {
+			v.pendingPods.Add(pod)
+			return nil
+		}
+	}
+	return nil
+}
+
 func (cache *schedulerCache) AddNode(node *v1.Node) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
@@ -328,7 +366,17 @@ func (cache *schedulerCache) AddNode(node *v1.Node) error {
 		n = NewNodeInfo()
 		cache.nodes[node.Name] = n
 	}
-	return n.SetNode(node)
+
+	err := n.SetNode(node)
+	if err != nil {
+		return err
+	}
+
+	cache.totalResource.MilliCPU += n.allocatableResource.MilliCPU
+	cache.totalResource.Memory += n.allocatableResource.Memory
+	cache.totalResource.NvidiaGPU += n.allocatableResource.NvidiaGPU
+
+	return nil
 }
 
 func (cache *schedulerCache) UpdateNode(oldNode, newNode *v1.Node) error {
@@ -369,6 +417,11 @@ func (cache *schedulerCache) AddNamespace(namespace *v1.Namespace) error {
 	if !ok {
 		n = NewNamespaceInfo()
 		cache.namespaces[namespace.Name] = n
+	}
+
+	if n.namespace == nil {
+		n.namespace = namespace
+		fmt.Printf("adding namespace %s\n", namespace.Name)
 	}
 	return nil
 }

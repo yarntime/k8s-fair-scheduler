@@ -17,8 +17,8 @@ limitations under the License.
 package priorities
 
 import (
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 // priorityMetadata is a type that is passed as metadata for priority functions

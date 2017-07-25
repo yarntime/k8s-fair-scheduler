@@ -20,11 +20,11 @@ import (
 	"reflect"
 	"testing"
 
+	priorityutil "k8s-fair-scheduler/pkg/scheduler/algorithm/priorities/util"
+	"k8s-fair-scheduler/pkg/scheduler/schedulercache"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/api/v1"
-	priorityutil "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/priorities/util"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 func TestPriorityMetadata(t *testing.T) {

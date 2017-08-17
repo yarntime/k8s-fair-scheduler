@@ -50,7 +50,7 @@ func (n *NamespaceInfo) score(totalResource *Resource) int32 {
 // NewNamespaceInfo returns a ready to use empty NamespaceInfo object.
 // If any pods are given in arguments, their information will be aggregated in
 // the returned object.
-func NewNamespaceInfo(pods ...*v1.Pod) *NamespaceInfo {
+func NewNamespaceInfo(namespace *v1.Namespace) *NamespaceInfo {
 	ni := &NamespaceInfo{
 		requestedResource: &Resource{},
 		allocatedResource: &Resource{},

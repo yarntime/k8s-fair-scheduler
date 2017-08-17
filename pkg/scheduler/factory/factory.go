@@ -204,6 +204,9 @@ func (c *ConfigFactory) GetScheduledPodLister() corelisters.PodLister {
 // TODO(resouer) need to update all the handlers here and below for equivalence cache
 func (c *ConfigFactory) addPodToCache(obj interface{}) {
 	pod, ok := obj.(*v1.Pod)
+
+	glog.V(5).Infof("Processing add pod : %s/%s.\n", pod.Namespace, pod.Name)
+
 	if !ok {
 		glog.Errorf("cannot convert to *v1.Pod: %v", obj)
 		return
@@ -216,6 +219,9 @@ func (c *ConfigFactory) addPodToCache(obj interface{}) {
 
 func (c *ConfigFactory) updatePodInCache(oldObj, newObj interface{}) {
 	oldPod, ok := oldObj.(*v1.Pod)
+
+	glog.V(5).Infof("Processing update pod : %s/%s.\n", oldPod.Namespace, oldPod.Name)
+
 	if !ok {
 		glog.Errorf("cannot convert oldObj to *v1.Pod: %v", oldObj)
 		return
@@ -313,6 +319,7 @@ func (c *ConfigFactory) addNamespaceToCache(obj interface{}) {
 		glog.Errorf("scheduler cache AddNamespace failed: %v", err)
 	}
 }
+
 
 func (c *ConfigFactory) deleteNamespaceFromCache(obj interface{}) {
 	var namespace *v1.Namespace
@@ -571,7 +578,7 @@ func (factory *ConfigFactory) createUnassignedNonTerminatedPodLW() *cache.ListWa
 // already scheduled.
 // TODO: return a ListerWatcher interface instead?
 func (factory *ConfigFactory) createAssignedNonTerminatedPodLW() *cache.ListWatch {
-	selector := fields.ParseSelectorOrDie("spec.nodeName!=" + "" + ",status.phase!=" + string(v1.PodSucceeded) + ",status.phase!=" + string(v1.PodFailed))
+	selector := fields.ParseSelectorOrDie("status.phase!=" + string(v1.PodSucceeded) + ",status.phase!=" + string(v1.PodFailed))
 	return cache.NewListWatchFromClient(factory.client.Core().RESTClient(), "pods", metav1.NamespaceAll, selector)
 }
 

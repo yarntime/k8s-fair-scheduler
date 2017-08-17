@@ -195,9 +195,9 @@ func (cache *schedulerCache) addPod(pod *v1.Pod) {
 	}
 	node.addPod(pod)
 
-	namespace, ok := cache.namespaces[pod.Name]
+	namespace, ok := cache.namespaces[pod.Namespace]
 	if !ok {
-		namespace = NewNamespaceInfo()
+		namespace = NewNamespaceInfo(nil)
 		cache.namespaces[pod.Namespace] = namespace
 	}
 	namespace.AddPod(pod)
@@ -323,6 +323,7 @@ func (cache *schedulerCache) RemovePod(pod *v1.Pod) error {
 func (cache *schedulerCache) GetNextPod() (*v1.Pod, error) {
 	var maxScore int32 = math.MinInt32
 	var selectedNamespaceInfo *NamespaceInfo
+
 	for _, v := range cache.namespaces {
 		if v.namespace == nil {
 			glog.V(5).Infof("namespace is not added...\n")
@@ -415,14 +416,13 @@ func (cache *schedulerCache) AddNamespace(namespace *v1.Namespace) error {
 
 	n, ok := cache.namespaces[namespace.Name]
 	if !ok {
-		n = NewNamespaceInfo()
+		n = NewNamespaceInfo(namespace)
 		cache.namespaces[namespace.Name] = n
 	}
-
 	if n.namespace == nil {
 		n.namespace = namespace
-		fmt.Printf("adding namespace %s\n", namespace.Name)
 	}
+
 	return nil
 }
 

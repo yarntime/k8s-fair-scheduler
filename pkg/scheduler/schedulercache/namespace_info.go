@@ -41,8 +41,8 @@ func (n *NamespaceInfo) score(totalResource *Resource) int32 {
 		}
 	}
 
-	glog.V(5).Infof("%f, %f, %f, %f\n", float64(n.requestedResource.Memory), float64(totalResource.Memory), float64(n.requestedResource.MilliCPU), float64(totalResource.MilliCPU))
-	memRatio, cpuRatio := float64(n.requestedResource.Memory)/float64(totalResource.Memory), float64(n.requestedResource.MilliCPU)/float64(totalResource.MilliCPU)
+	glog.V(5).Infof("%f, %f, %f, %f\n", float64(n.allocatedResource.Memory), float64(totalResource.Memory), float64(n.allocatedResource.MilliCPU), float64(totalResource.MilliCPU))
+	memRatio, cpuRatio := float64(n.allocatedResource.Memory)/float64(totalResource.Memory), float64(n.allocatedResource.MilliCPU)/float64(totalResource.MilliCPU)
 
 	return int32(100) - int32(math.Max(memRatio, cpuRatio)*100)
 }

@@ -120,7 +120,7 @@ func (cache *schedulerCache) AssumePod(pod *v1.Pod) error {
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
-	
+
 	ps := &podState{
 		pod: pod,
 	}

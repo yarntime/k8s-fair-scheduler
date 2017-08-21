@@ -100,6 +100,9 @@ type Cache interface {
 	// List lists all cached pods (including assumed ones).
 	List(labels.Selector) ([]*v1.Pod, error)
 
+	// AddPodToQueue adds pod to the coresponding  namespace queue
+	AddPodToQueue(pod *v1.Pod) error
+
 	// AddNamespace adds namespace to cache
 	AddNamespace(namespace *v1.Namespace) error
 

@@ -60,9 +60,10 @@ func NewNamespaceInfo(namespace *v1.Namespace) *NamespaceInfo {
 	return ni
 }
 
-func (n *NamespaceInfo) AddPod(pod *v1.Pod) {
+func (n *NamespaceInfo) AddPodToQueue(pod *v1.Pod) {
 
 	res, _, _ := calculateResource(pod)
+
 	n.requestedResource.MilliCPU += res.MilliCPU
 	n.requestedResource.Memory += res.Memory
 	n.requestedResource.NvidiaGPU += res.NvidiaGPU
@@ -73,22 +74,43 @@ func (n *NamespaceInfo) AddPod(pod *v1.Pod) {
 		n.requestedResource.OpaqueIntResources[rName] += rQuant
 	}
 
-	if pod.Spec.NodeName == "" {
-		n.pendingPods.Add(pod)
-	} else {
-		n.allocatedResource.MilliCPU += res.MilliCPU
-		n.allocatedResource.Memory += res.Memory
-		n.allocatedResource.NvidiaGPU += res.NvidiaGPU
+	n.pendingPods.Add(pod)
+
+	n.generation++
+}
+
+func (n *NamespaceInfo) AddPod(pod *v1.Pod) {
+	res, _, _ := calculateResource(pod)
+
+	n.allocatedResource.MilliCPU += res.MilliCPU
+	n.allocatedResource.Memory += res.Memory
+	n.allocatedResource.NvidiaGPU += res.NvidiaGPU
+	if n.allocatedResource.OpaqueIntResources == nil && len(res.OpaqueIntResources) > 0 {
+		n.allocatedResource.OpaqueIntResources = map[v1.ResourceName]int64{}
+	}
+	for rName, rQuant := range res.OpaqueIntResources {
+		n.allocatedResource.OpaqueIntResources[rName] += rQuant
 	}
 
 	n.generation++
 }
 
 func (n *NamespaceInfo) RemovePod(pod *v1.Pod) error {
+
+	glog.V(5).Infof("release resource of pod %s/%s\n", pod.Namespace, pod.Name)
+
 	res, _, _ := calculateResource(pod)
+
 	n.requestedResource.MilliCPU -= res.MilliCPU
 	n.requestedResource.Memory -= res.Memory
 	n.requestedResource.NvidiaGPU -= res.NvidiaGPU
+
+	if pod.Spec.NodeName != "" {
+		n.allocatedResource.MilliCPU -= res.MilliCPU
+		n.allocatedResource.Memory -= res.Memory
+		n.allocatedResource.NvidiaGPU -= res.NvidiaGPU
+	}
+
 	return nil
 }
 

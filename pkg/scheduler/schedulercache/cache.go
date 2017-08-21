@@ -121,6 +121,10 @@ func (cache *schedulerCache) AssumePod(pod *v1.Pod) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
+	if _, ok := cache.podStates[key]; ok {
+		return fmt.Errorf("pod %v state wasn't initial but get assumed", key)
+	}
+
 	ps := &podState{
 		pod: pod,
 	}
@@ -144,11 +148,14 @@ func (cache *schedulerCache) finishBinding(pod *v1.Pod, now time.Time) error {
 	defer cache.mu.Unlock()
 
 	glog.V(5).Infof("Finished binding for pod %v. Can be expired.", key)
+
 	currState, ok := cache.podStates[key]
+
 	if ok && cache.assumedPods[key] {
 		dl := now.Add(cache.ttl)
 		currState.bindingFinished = true
 		currState.deadline = &dl
+		currState.pod = pod
 	}
 	return nil
 }
@@ -218,7 +225,7 @@ func (cache *schedulerCache) removePod(pod *v1.Pod) error {
 		delete(cache.nodes, pod.Spec.NodeName)
 	}
 
-	namespace := cache.namespaces[pod.Name]
+	namespace := cache.namespaces[pod.Namespace]
 	if err := namespace.RemovePod(pod); err != nil {
 		return err
 	}
@@ -243,8 +250,8 @@ func (cache *schedulerCache) AddPod(pod *v1.Pod) error {
 			glog.Warningf("Pod %v assumed to a different node than added to.", key)
 			// Clean this up.
 			cache.removePod(currState.pod)
-			cache.addPod(pod)
 		}
+		cache.addPod(pod)
 		delete(cache.assumedPods, key)
 		cache.podStates[key].deadline = nil
 	case !ok:
@@ -282,12 +289,14 @@ func (cache *schedulerCache) UpdatePod(oldPod, newPod *v1.Pod) error {
 			return err
 		}
 	default:
+		fmt.Printf("currState %v, isAssumePods %v", currState, cache.assumedPods[key])
 		return fmt.Errorf("pod %v state wasn't added but get updated", key)
 	}
 	return nil
 }
 
 func (cache *schedulerCache) RemovePod(pod *v1.Pod) error {
+	glog.V(5).Infof("Cache remove pod : %s/%s.\n", pod.Namespace, pod.Name)
 	key, err := getPodKey(pod)
 	if err != nil {
 		return err
@@ -403,6 +412,22 @@ func (cache *schedulerCache) RemoveNode(node *v1.Node) error {
 	if len(n.pods) == 0 && n.node == nil {
 		delete(cache.nodes, node.Name)
 	}
+	return nil
+}
+
+func (cache *schedulerCache) AddPodToQueue(pod *v1.Pod) error {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+
+	n, ok := cache.namespaces[pod.Namespace]
+
+	if !ok {
+		n = NewNamespaceInfo(nil)
+		cache.namespaces[pod.Namespace] = n
+	}
+
+	n.AddPodToQueue(pod)
+
 	return nil
 }
 

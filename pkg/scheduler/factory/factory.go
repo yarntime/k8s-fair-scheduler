@@ -62,6 +62,8 @@ type ConfigFactory struct {
 	podQueue *cache.FIFO
 	// a means to list all known scheduled pods.
 	scheduledPodLister corelisters.PodLister
+	// a means to list all unschedulerd pods.
+	unscheduledPodLister corelisters.PodLister
 	// a means to list all known scheduled pods and pods assumed to have been scheduled.
 	podLister algorithm.PodLister
 	// a means to list all nodes
@@ -84,6 +86,8 @@ type ConfigFactory struct {
 	StopEverything chan struct{}
 
 	scheduledPodPopulator cache.Controller
+
+	unscheduledPodPopulator cache.Controller
 
 	schedulerCache schedulercache.Cache
 
@@ -152,6 +156,18 @@ func NewConfigFactory(
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	c.scheduledPodLister = corelisters.NewPodLister(scheduledPodIndexer)
+
+	_, c.unscheduledPodPopulator = cache.NewIndexerInformer(
+		c.createUnassignedNonTerminatedPodLW(),
+		&v1.Pod{},
+		0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: c.addPodToQueue,
+		},
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+	)
+
+	go c.unscheduledPodPopulator.Run(stopEverything)
 
 	// Only nodes in the "Ready" condition with status == "True" are schedulable
 	nodeInformer.Informer().AddEventHandlerWithResyncPeriod(
@@ -308,6 +324,21 @@ func (c *ConfigFactory) deleteNodeFromCache(obj interface{}) {
 	}
 }
 
+func (c *ConfigFactory) addPodToQueue(obj interface{}) {
+	pod, ok := obj.(*v1.Pod)
+
+	if !ok {
+		glog.Errorf("cannot convert to *v1.Pod: %v", obj)
+		return
+	}
+
+	glog.V(5).Infof("Processing init pod : %s/%s.\n", pod.Namespace, pod.Name)
+
+	if err := c.schedulerCache.AddPodToQueue(pod); err != nil {
+		glog.Errorf("scheduler init pod failed: %v", err)
+	}
+}
+
 func (c *ConfigFactory) addNamespaceToCache(obj interface{}) {
 	namespace, ok := obj.(*v1.Namespace)
 	if !ok {
@@ -319,7 +350,6 @@ func (c *ConfigFactory) addNamespaceToCache(obj interface{}) {
 		glog.Errorf("scheduler cache AddNamespace failed: %v", err)
 	}
 }
-
 
 func (c *ConfigFactory) deleteNamespaceFromCache(obj interface{}) {
 	var namespace *v1.Namespace
@@ -504,7 +534,7 @@ func (f *ConfigFactory) getPluginArgs() (*PluginFactoryArgs, error) {
 
 func (f *ConfigFactory) Run() {
 	// Watch and queue pods that need scheduling.
-	cache.NewReflector(f.createUnassignedNonTerminatedPodLW(), &v1.Pod{}, f.podQueue, 0).RunUntil(f.StopEverything)
+	//cache.NewReflector(f.createUnassignedNonTerminatedPodLW(), &v1.Pod{}, f.podQueue, 0).RunUntil(f.StopEverything)
 
 	// Begin populating scheduled pods.
 	go f.scheduledPodPopulator.Run(f.StopEverything)
@@ -578,7 +608,7 @@ func (factory *ConfigFactory) createUnassignedNonTerminatedPodLW() *cache.ListWa
 // already scheduled.
 // TODO: return a ListerWatcher interface instead?
 func (factory *ConfigFactory) createAssignedNonTerminatedPodLW() *cache.ListWatch {
-	selector := fields.ParseSelectorOrDie("status.phase!=" + string(v1.PodSucceeded) + ",status.phase!=" + string(v1.PodFailed))
+	selector := fields.ParseSelectorOrDie("spec.nodeName!=" + "" + ",status.phase!=" + string(v1.PodSucceeded) + ",status.phase!=" + string(v1.PodFailed))
 	return cache.NewListWatchFromClient(factory.client.Core().RESTClient(), "pods", metav1.NamespaceAll, selector)
 }
 

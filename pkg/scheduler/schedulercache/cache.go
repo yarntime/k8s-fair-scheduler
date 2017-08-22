@@ -354,12 +354,8 @@ func (cache *schedulerCache) GetNextPod() (*v1.Pod, error) {
 
 func (cache *schedulerCache) PushBackPod(pod *v1.Pod) error {
 	namespace := pod.Namespace
-	for k, v := range cache.namespaces {
-		if k == namespace {
-			v.pendingPods.Add(pod)
-			return nil
-		}
-	}
+	n := cache.namespaces[namespace]
+	n.pendingPods.Add(pod)
 	return nil
 }
 

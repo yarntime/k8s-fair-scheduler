@@ -58,8 +58,6 @@ const (
 // TODO make this private if possible, so that only its interface is externally used.
 type ConfigFactory struct {
 	client clientset.Interface
-	// queue for pods that need scheduling
-	podQueue *cache.FIFO
 	// a means to list all known scheduled pods.
 	scheduledPodLister corelisters.PodLister
 	// a means to list all unschedulerd pods.
@@ -125,7 +123,6 @@ func NewConfigFactory(
 	c := &ConfigFactory{
 		client:                         client,
 		podLister:                      schedulerCache,
-		podQueue:                       cache.NewFIFO(cache.MetaNamespaceKeyFunc),
 		pVLister:                       pvInformer.Lister(),
 		pVCLister:                      pvcInformer.Lister(),
 		serviceLister:                  serviceInformer.Lister(),
@@ -468,7 +465,7 @@ func (f *ConfigFactory) CreateFromKeys(predicateKeys, priorityKeys sets.String, 
 		NextPod: func() *v1.Pod {
 			return f.getNextPod()
 		},
-		Error:          f.MakeDefaultErrorFunc(podBackoff, f.podQueue),
+		Error:          f.MakeDefaultErrorFunc(podBackoff),
 		StopEverything: f.StopEverything,
 	}, nil
 }
@@ -612,7 +609,7 @@ func (factory *ConfigFactory) createAssignedNonTerminatedPodLW() *cache.ListWatc
 	return cache.NewListWatchFromClient(factory.client.Core().RESTClient(), "pods", metav1.NamespaceAll, selector)
 }
 
-func (factory *ConfigFactory) MakeDefaultErrorFunc(backoff *util.PodBackoff, podQueue *cache.FIFO) func(pod *v1.Pod, err error) {
+func (factory *ConfigFactory) MakeDefaultErrorFunc(backoff *util.PodBackoff) func(pod *v1.Pod, err error) {
 	return func(pod *v1.Pod, err error) {
 		if err == core.ErrNoNodesAvailable {
 			glog.V(4).Infof("Unable to schedule %v %v: no nodes are registered to the cluster; waiting", pod.Namespace, pod.Name)
@@ -637,7 +634,7 @@ func (factory *ConfigFactory) MakeDefaultErrorFunc(backoff *util.PodBackoff, pod
 			// Get the pod again; it may have changed/been scheduled already.
 			getBackoff := initialGetBackoff
 			for {
-				pod, err := factory.client.Core().Pods(podID.Namespace).Get(podID.Name, metav1.GetOptions{})
+				pod, err := factory.client.CoreV1().Pods(podID.Namespace).Get(podID.Name, metav1.GetOptions{})
 				if err == nil {
 					if len(pod.Spec.NodeName) == 0 {
 						factory.schedulerCache.PushBackPod(pod)

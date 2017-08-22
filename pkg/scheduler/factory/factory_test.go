@@ -39,6 +39,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	informers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions"
+	"k8s.io/kubernetes/pkg/kubelet/util/queue"
 )
 
 func TestCreate(t *testing.T) {
@@ -61,6 +62,7 @@ func TestCreate(t *testing.T) {
 		informerFactory.Extensions().V1beta1().ReplicaSets(),
 		informerFactory.Apps().V1beta1().StatefulSets(),
 		informerFactory.Core().V1().Services(),
+		informerFactory.Core().V1().Namespaces(),
 		v1.DefaultHardPodAffinitySymmetricWeight,
 	)
 	factory.Create()
@@ -91,6 +93,7 @@ func TestCreateFromConfig(t *testing.T) {
 		informerFactory.Extensions().V1beta1().ReplicaSets(),
 		informerFactory.Apps().V1beta1().StatefulSets(),
 		informerFactory.Core().V1().Services(),
+		informerFactory.Core().V1().Namespaces(),
 		v1.DefaultHardPodAffinitySymmetricWeight,
 	)
 
@@ -144,6 +147,7 @@ func TestCreateFromEmptyConfig(t *testing.T) {
 		informerFactory.Extensions().V1beta1().ReplicaSets(),
 		informerFactory.Apps().V1beta1().StatefulSets(),
 		informerFactory.Core().V1().Services(),
+		informerFactory.Core().V1().Namespaces(),
 		v1.DefaultHardPodAffinitySymmetricWeight,
 	)
 
@@ -169,58 +173,6 @@ func PriorityOne(pod *v1.Pod, nodeNameToInfo map[string]*schedulercache.NodeInfo
 
 func PriorityTwo(pod *v1.Pod, nodeNameToInfo map[string]*schedulercache.NodeInfo, nodes []*v1.Node) (schedulerapi.HostPriorityList, error) {
 	return []schedulerapi.HostPriority{}, nil
-}
-
-func TestDefaultErrorFunc(t *testing.T) {
-	testPod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"},
-		Spec:       apitesting.V1DeepEqualSafePodSpec(),
-	}
-	handler := utiltesting.FakeHandler{
-		StatusCode:   200,
-		ResponseBody: runtime.EncodeOrDie(testapi.Default.Codec(), testPod),
-		T:            t,
-	}
-	mux := http.NewServeMux()
-
-	// FakeHandler musn't be sent requests other than the one you want to test.
-	mux.Handle(testapi.Default.ResourcePath("pods", "bar", "foo"), &handler)
-	server := httptest.NewServer(mux)
-	defer server.Close()
-	client := clientset.NewForConfigOrDie(&restclient.Config{Host: server.URL, ContentConfig: restclient.ContentConfig{GroupVersion: &api.Registry.GroupOrDie(v1.GroupName).GroupVersion}})
-	informerFactory := informers.NewSharedInformerFactory(client, 0)
-	factory := NewConfigFactory(
-		v1.DefaultSchedulerName,
-		client,
-		informerFactory.Core().V1().Nodes(),
-		informerFactory.Core().V1().PersistentVolumes(),
-		informerFactory.Core().V1().PersistentVolumeClaims(),
-		informerFactory.Core().V1().ReplicationControllers(),
-		informerFactory.Extensions().V1beta1().ReplicaSets(),
-		informerFactory.Apps().V1beta1().StatefulSets(),
-		informerFactory.Core().V1().Services(),
-		v1.DefaultHardPodAffinitySymmetricWeight,
-	)
-	queue := cache.NewFIFO(cache.MetaNamespaceKeyFunc)
-	podBackoff := util.CreatePodBackoff(1*time.Millisecond, 1*time.Second)
-	errFunc := factory.MakeDefaultErrorFunc(podBackoff, queue)
-
-	errFunc(testPod, nil)
-	for {
-		// This is a terrible way to do this but I plan on replacing this
-		// whole error handling system in the future. The test will time
-		// out if something doesn't work.
-		time.Sleep(10 * time.Millisecond)
-		got, exists, _ := queue.Get(testPod)
-		if !exists {
-			continue
-		}
-		handler.ValidateRequest(t, testapi.Default.ResourcePath("pods", "bar", "foo"), "GET", nil)
-		if e, a := testPod, got; !reflect.DeepEqual(e, a) {
-			t.Errorf("Expected %v, got %v", e, a)
-		}
-		break
-	}
 }
 
 func TestNodeEnumerator(t *testing.T) {
@@ -310,6 +262,7 @@ func TestResponsibleForPod(t *testing.T) {
 		informerFactory.Extensions().V1beta1().ReplicaSets(),
 		informerFactory.Apps().V1beta1().StatefulSets(),
 		informerFactory.Core().V1().Services(),
+		informerFactory.Core().V1().Namespaces(),
 		v1.DefaultHardPodAffinitySymmetricWeight,
 	)
 	// factory of "foo-scheduler"
@@ -323,6 +276,7 @@ func TestResponsibleForPod(t *testing.T) {
 		informerFactory.Extensions().V1beta1().ReplicaSets(),
 		informerFactory.Apps().V1beta1().StatefulSets(),
 		informerFactory.Core().V1().Services(),
+		informerFactory.Core().V1().Namespaces(),
 		v1.DefaultHardPodAffinitySymmetricWeight,
 	)
 	// scheduler annotations to be tested
@@ -391,6 +345,7 @@ func TestInvalidHardPodAffinitySymmetricWeight(t *testing.T) {
 		informerFactory.Extensions().V1beta1().ReplicaSets(),
 		informerFactory.Apps().V1beta1().StatefulSets(),
 		informerFactory.Core().V1().Services(),
+		informerFactory.Core().V1().Namespaces(),
 		-1,
 	)
 	_, err := factory.Create()
@@ -435,6 +390,7 @@ func TestInvalidFactoryArgs(t *testing.T) {
 			informerFactory.Extensions().V1beta1().ReplicaSets(),
 			informerFactory.Apps().V1beta1().StatefulSets(),
 			informerFactory.Core().V1().Services(),
+			informerFactory.Core().V1().Namespaces(),
 			test.hardPodAffinitySymmetricWeight,
 		)
 		_, err := factory.Create()
